@@ -1,0 +1,43 @@
+syntax = "proto3";
+package transfer.v1;
+
+message CreateUploadRequest {
+	int64 size 	= 2;
+	bytes metadata	= 1;
+}
+
+message CreateUploadResponse {
+	string id 					= 1;
+	int64 preferred_blocksize	= 2;
+}
+
+message SyncUploadRequest {
+	string id = 1;
+}
+
+message SyncUploadResponse {
+	int64 offset 	= 1;
+}
+
+message UploadBlockRequest {
+	string id		= 1;
+	int64 offset	= 2;
+	int64 size		= 3;
+	bytes sha256	= 4;
+	bytes data 		= 5;
+}
+
+message UploadBlockResponse {}
+
+service TransferService {
+	// CreateUpload is called to create a new upload.
+	rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
+
+	// SyncUpload is used when we want to resume an upload and we need to know
+	// what the current offset on the server side is.  If the server has restarted or
+	// the upload has somehow gotten itself deleted, the code field will indicate this.
+	rpc SyncUpload(SyncUploadRequest) returns (SyncUploadResponse);
+
+	// UploadBlock
+	rpc UploadBlock(stream UploadBlockRequest) returns (UploadBlockResponse);
+} 
