@@ -6,12 +6,16 @@ import (
 	"sync"
 )
 
+// Upload represents an active upload.  It keeps track of the offset of the upload.
+// The offset is protected by a mutex so any changes to the underlying file will
+// be in sync with the writeOffset.
 type Upload struct {
 	ID          string
 	Size        int64
 	Filename    string
-	file        *os.File
+	Meta        []byte
 	mu          sync.RWMutex
+	file        *os.File
 	writeOffset int64
 }
 
@@ -40,7 +44,7 @@ func (u *Upload) Write(b []byte) (int, error) {
 	return n, nil
 }
 
-// Returns current offset
+// Offset returns the current offset of the upload.
 func (u *Upload) Offset() int64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()

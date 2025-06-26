@@ -20,8 +20,8 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	TransferService_CreateUpload_FullMethodName = "/transfer.v1.TransferService/CreateUpload"
-	TransferService_SyncUpload_FullMethodName   = "/transfer.v1.TransferService/SyncUpload"
-	TransferService_UploadBlock_FullMethodName  = "/transfer.v1.TransferService/UploadBlock"
+	TransferService_GetOffset_FullMethodName    = "/transfer.v1.TransferService/GetOffset"
+	TransferService_Upload_FullMethodName       = "/transfer.v1.TransferService/Upload"
 )
 
 // TransferServiceClient is the client API for TransferService service.
@@ -30,12 +30,12 @@ const (
 type TransferServiceClient interface {
 	// CreateUpload is called to create a new upload.
 	CreateUpload(ctx context.Context, in *CreateUploadRequest, opts ...grpc.CallOption) (*CreateUploadResponse, error)
-	// SyncUpload is used when we want to resume an upload and we need to know
+	// GetOffset is used when we want to resume an upload and we need to know
 	// what the current offset on the server side is.  If the server has restarted or
 	// the upload has somehow gotten itself deleted, the code field will indicate this.
-	SyncUpload(ctx context.Context, in *SyncUploadRequest, opts ...grpc.CallOption) (*SyncUploadResponse, error)
-	// UploadBlock
-	UploadBlock(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadBlockRequest, UploadBlockResponse], error)
+	GetOffset(ctx context.Context, in *GetOffsetRequest, opts ...grpc.CallOption) (*GetOffsetResponse, error)
+	// Upload creates an upload stream.
+	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
 }
 
 type transferServiceClient struct {
@@ -56,28 +56,28 @@ func (c *transferServiceClient) CreateUpload(ctx context.Context, in *CreateUplo
 	return out, nil
 }
 
-func (c *transferServiceClient) SyncUpload(ctx context.Context, in *SyncUploadRequest, opts ...grpc.CallOption) (*SyncUploadResponse, error) {
+func (c *transferServiceClient) GetOffset(ctx context.Context, in *GetOffsetRequest, opts ...grpc.CallOption) (*GetOffsetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SyncUploadResponse)
-	err := c.cc.Invoke(ctx, TransferService_SyncUpload_FullMethodName, in, out, cOpts...)
+	out := new(GetOffsetResponse)
+	err := c.cc.Invoke(ctx, TransferService_GetOffset_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *transferServiceClient) UploadBlock(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadBlockRequest, UploadBlockResponse], error) {
+func (c *transferServiceClient) Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &TransferService_ServiceDesc.Streams[0], TransferService_UploadBlock_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &TransferService_ServiceDesc.Streams[0], TransferService_Upload_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[UploadBlockRequest, UploadBlockResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[UploadRequest, UploadResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TransferService_UploadBlockClient = grpc.ClientStreamingClient[UploadBlockRequest, UploadBlockResponse]
+type TransferService_UploadClient = grpc.ClientStreamingClient[UploadRequest, UploadResponse]
 
 // TransferServiceServer is the server API for TransferService service.
 // All implementations should embed UnimplementedTransferServiceServer
@@ -85,12 +85,12 @@ type TransferService_UploadBlockClient = grpc.ClientStreamingClient[UploadBlockR
 type TransferServiceServer interface {
 	// CreateUpload is called to create a new upload.
 	CreateUpload(context.Context, *CreateUploadRequest) (*CreateUploadResponse, error)
-	// SyncUpload is used when we want to resume an upload and we need to know
+	// GetOffset is used when we want to resume an upload and we need to know
 	// what the current offset on the server side is.  If the server has restarted or
 	// the upload has somehow gotten itself deleted, the code field will indicate this.
-	SyncUpload(context.Context, *SyncUploadRequest) (*SyncUploadResponse, error)
-	// UploadBlock
-	UploadBlock(grpc.ClientStreamingServer[UploadBlockRequest, UploadBlockResponse]) error
+	GetOffset(context.Context, *GetOffsetRequest) (*GetOffsetResponse, error)
+	// Upload creates an upload stream.
+	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
 }
 
 // UnimplementedTransferServiceServer should be embedded to have
@@ -103,11 +103,11 @@ type UnimplementedTransferServiceServer struct{}
 func (UnimplementedTransferServiceServer) CreateUpload(context.Context, *CreateUploadRequest) (*CreateUploadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateUpload not implemented")
 }
-func (UnimplementedTransferServiceServer) SyncUpload(context.Context, *SyncUploadRequest) (*SyncUploadResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SyncUpload not implemented")
+func (UnimplementedTransferServiceServer) GetOffset(context.Context, *GetOffsetRequest) (*GetOffsetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOffset not implemented")
 }
-func (UnimplementedTransferServiceServer) UploadBlock(grpc.ClientStreamingServer[UploadBlockRequest, UploadBlockResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method UploadBlock not implemented")
+func (UnimplementedTransferServiceServer) Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
 func (UnimplementedTransferServiceServer) testEmbeddedByValue() {}
 
@@ -147,30 +147,30 @@ func _TransferService_CreateUpload_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TransferService_SyncUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SyncUploadRequest)
+func _TransferService_GetOffset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOffsetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TransferServiceServer).SyncUpload(ctx, in)
+		return srv.(TransferServiceServer).GetOffset(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TransferService_SyncUpload_FullMethodName,
+		FullMethod: TransferService_GetOffset_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TransferServiceServer).SyncUpload(ctx, req.(*SyncUploadRequest))
+		return srv.(TransferServiceServer).GetOffset(ctx, req.(*GetOffsetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TransferService_UploadBlock_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TransferServiceServer).UploadBlock(&grpc.GenericServerStream[UploadBlockRequest, UploadBlockResponse]{ServerStream: stream})
+func _TransferService_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TransferServiceServer).Upload(&grpc.GenericServerStream[UploadRequest, UploadResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type TransferService_UploadBlockServer = grpc.ClientStreamingServer[UploadBlockRequest, UploadBlockResponse]
+type TransferService_UploadServer = grpc.ClientStreamingServer[UploadRequest, UploadResponse]
 
 // TransferService_ServiceDesc is the grpc.ServiceDesc for TransferService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -184,14 +184,14 @@ var TransferService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TransferService_CreateUpload_Handler,
 		},
 		{
-			MethodName: "SyncUpload",
-			Handler:    _TransferService_SyncUpload_Handler,
+			MethodName: "GetOffset",
+			Handler:    _TransferService_GetOffset_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "UploadBlock",
-			Handler:       _TransferService_UploadBlock_Handler,
+			StreamName:    "Upload",
+			Handler:       _TransferService_Upload_Handler,
 			ClientStreams: true,
 		},
 	},

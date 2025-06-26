@@ -11,33 +11,32 @@ message CreateUploadResponse {
 	int64 preferred_blocksize	= 2;
 }
 
-message SyncUploadRequest {
+message GetOffsetRequest {
 	string id = 1;
 }
 
-message SyncUploadResponse {
+message GetOffsetResponse {
 	int64 offset 	= 1;
 }
 
-message UploadBlockRequest {
+message UploadRequest {
 	string id		= 1;
 	int64 offset	= 2;
-	int64 size		= 3;
-	bytes sha256	= 4;
-	bytes data 		= 5;
+	bytes sha256	= 3;
+	bytes data 		= 4;
 }
 
-message UploadBlockResponse {}
+message UploadResponse {}
 
 service TransferService {
 	// CreateUpload is called to create a new upload.
 	rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
 
-	// SyncUpload is used when we want to resume an upload and we need to know
+	// GetOffset is used when we want to resume an upload and we need to know
 	// what the current offset on the server side is.  If the server has restarted or
 	// the upload has somehow gotten itself deleted, the code field will indicate this.
-	rpc SyncUpload(SyncUploadRequest) returns (SyncUploadResponse);
+	rpc GetOffset(GetOffsetRequest) returns (GetOffsetResponse);
 
-	// UploadBlock
-	rpc UploadBlock(stream UploadBlockRequest) returns (UploadBlockResponse);
+	// Upload creates an upload stream.
+	rpc Upload(stream UploadRequest) returns (UploadResponse);
 } 

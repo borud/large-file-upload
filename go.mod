@@ -3,6 +3,7 @@ module github.com/borud/large-file-upload
 go 1.23.6
 
 require (
+	github.com/alecthomas/kong v1.12.0
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6

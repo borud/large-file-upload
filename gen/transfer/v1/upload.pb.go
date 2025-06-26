@@ -125,27 +125,27 @@ func (x *CreateUploadResponse) GetPreferredBlocksize() int64 {
 	return 0
 }
 
-type SyncUploadRequest struct {
+type GetOffsetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncUploadRequest) Reset() {
-	*x = SyncUploadRequest{}
+func (x *GetOffsetRequest) Reset() {
+	*x = GetOffsetRequest{}
 	mi := &file_transfer_v1_upload_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncUploadRequest) String() string {
+func (x *GetOffsetRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncUploadRequest) ProtoMessage() {}
+func (*GetOffsetRequest) ProtoMessage() {}
 
-func (x *SyncUploadRequest) ProtoReflect() protoreflect.Message {
+func (x *GetOffsetRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_transfer_v1_upload_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -157,39 +157,39 @@ func (x *SyncUploadRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncUploadRequest.ProtoReflect.Descriptor instead.
-func (*SyncUploadRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetOffsetRequest.ProtoReflect.Descriptor instead.
+func (*GetOffsetRequest) Descriptor() ([]byte, []int) {
 	return file_transfer_v1_upload_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *SyncUploadRequest) GetId() string {
+func (x *GetOffsetRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-type SyncUploadResponse struct {
+type GetOffsetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Offset        int64                  `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SyncUploadResponse) Reset() {
-	*x = SyncUploadResponse{}
+func (x *GetOffsetResponse) Reset() {
+	*x = GetOffsetResponse{}
 	mi := &file_transfer_v1_upload_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SyncUploadResponse) String() string {
+func (x *GetOffsetResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SyncUploadResponse) ProtoMessage() {}
+func (*GetOffsetResponse) ProtoMessage() {}
 
-func (x *SyncUploadResponse) ProtoReflect() protoreflect.Message {
+func (x *GetOffsetResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_transfer_v1_upload_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -201,43 +201,42 @@ func (x *SyncUploadResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SyncUploadResponse.ProtoReflect.Descriptor instead.
-func (*SyncUploadResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetOffsetResponse.ProtoReflect.Descriptor instead.
+func (*GetOffsetResponse) Descriptor() ([]byte, []int) {
 	return file_transfer_v1_upload_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *SyncUploadResponse) GetOffset() int64 {
+func (x *GetOffsetResponse) GetOffset() int64 {
 	if x != nil {
 		return x.Offset
 	}
 	return 0
 }
 
-type UploadBlockRequest struct {
+type UploadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Offset        int64                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-	Size          int64                  `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
-	Sha256        []byte                 `protobuf:"bytes,4,opt,name=sha256,proto3" json:"sha256,omitempty"`
-	Data          []byte                 `protobuf:"bytes,5,opt,name=data,proto3" json:"data,omitempty"`
+	Sha256        []byte                 `protobuf:"bytes,3,opt,name=sha256,proto3" json:"sha256,omitempty"`
+	Data          []byte                 `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UploadBlockRequest) Reset() {
-	*x = UploadBlockRequest{}
+func (x *UploadRequest) Reset() {
+	*x = UploadRequest{}
 	mi := &file_transfer_v1_upload_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadBlockRequest) String() string {
+func (x *UploadRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadBlockRequest) ProtoMessage() {}
+func (*UploadRequest) ProtoMessage() {}
 
-func (x *UploadBlockRequest) ProtoReflect() protoreflect.Message {
+func (x *UploadRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_transfer_v1_upload_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -249,66 +248,59 @@ func (x *UploadBlockRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadBlockRequest.ProtoReflect.Descriptor instead.
-func (*UploadBlockRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use UploadRequest.ProtoReflect.Descriptor instead.
+func (*UploadRequest) Descriptor() ([]byte, []int) {
 	return file_transfer_v1_upload_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *UploadBlockRequest) GetId() string {
+func (x *UploadRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *UploadBlockRequest) GetOffset() int64 {
+func (x *UploadRequest) GetOffset() int64 {
 	if x != nil {
 		return x.Offset
 	}
 	return 0
 }
 
-func (x *UploadBlockRequest) GetSize() int64 {
-	if x != nil {
-		return x.Size
-	}
-	return 0
-}
-
-func (x *UploadBlockRequest) GetSha256() []byte {
+func (x *UploadRequest) GetSha256() []byte {
 	if x != nil {
 		return x.Sha256
 	}
 	return nil
 }
 
-func (x *UploadBlockRequest) GetData() []byte {
+func (x *UploadRequest) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
 	return nil
 }
 
-type UploadBlockResponse struct {
+type UploadResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UploadBlockResponse) Reset() {
-	*x = UploadBlockResponse{}
+func (x *UploadResponse) Reset() {
+	*x = UploadResponse{}
 	mi := &file_transfer_v1_upload_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadBlockResponse) String() string {
+func (x *UploadResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadBlockResponse) ProtoMessage() {}
+func (*UploadResponse) ProtoMessage() {}
 
-func (x *UploadBlockResponse) ProtoReflect() protoreflect.Message {
+func (x *UploadResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_transfer_v1_upload_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -320,8 +312,8 @@ func (x *UploadBlockResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadBlockResponse.ProtoReflect.Descriptor instead.
-func (*UploadBlockResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use UploadResponse.ProtoReflect.Descriptor instead.
+func (*UploadResponse) Descriptor() ([]byte, []int) {
 	return file_transfer_v1_upload_proto_rawDescGZIP(), []int{5}
 }
 
@@ -335,23 +327,21 @@ const file_transfer_v1_upload_proto_rawDesc = "" +
 	"\bmetadata\x18\x01 \x01(\fR\bmetadata\"W\n" +
 	"\x14CreateUploadResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
-	"\x13preferred_blocksize\x18\x02 \x01(\x03R\x12preferredBlocksize\"#\n" +
-	"\x11SyncUploadRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\",\n" +
-	"\x12SyncUploadResponse\x12\x16\n" +
-	"\x06offset\x18\x01 \x01(\x03R\x06offset\"|\n" +
-	"\x12UploadBlockRequest\x12\x0e\n" +
+	"\x13preferred_blocksize\x18\x02 \x01(\x03R\x12preferredBlocksize\"\"\n" +
+	"\x10GetOffsetRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"+\n" +
+	"\x11GetOffsetResponse\x12\x16\n" +
+	"\x06offset\x18\x01 \x01(\x03R\x06offset\"c\n" +
+	"\rUploadRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12\x12\n" +
-	"\x04size\x18\x03 \x01(\x03R\x04size\x12\x16\n" +
-	"\x06sha256\x18\x04 \x01(\fR\x06sha256\x12\x12\n" +
-	"\x04data\x18\x05 \x01(\fR\x04data\"\x15\n" +
-	"\x13UploadBlockResponse2\x89\x02\n" +
+	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12\x16\n" +
+	"\x06sha256\x18\x03 \x01(\fR\x06sha256\x12\x12\n" +
+	"\x04data\x18\x04 \x01(\fR\x04data\"\x10\n" +
+	"\x0eUploadResponse2\xf7\x01\n" +
 	"\x0fTransferService\x12S\n" +
-	"\fCreateUpload\x12 .transfer.v1.CreateUploadRequest\x1a!.transfer.v1.CreateUploadResponse\x12M\n" +
-	"\n" +
-	"SyncUpload\x12\x1e.transfer.v1.SyncUploadRequest\x1a\x1f.transfer.v1.SyncUploadResponse\x12R\n" +
-	"\vUploadBlock\x12\x1f.transfer.v1.UploadBlockRequest\x1a .transfer.v1.UploadBlockResponse(\x01B\xaa\x01\n" +
+	"\fCreateUpload\x12 .transfer.v1.CreateUploadRequest\x1a!.transfer.v1.CreateUploadResponse\x12J\n" +
+	"\tGetOffset\x12\x1d.transfer.v1.GetOffsetRequest\x1a\x1e.transfer.v1.GetOffsetResponse\x12C\n" +
+	"\x06Upload\x12\x1a.transfer.v1.UploadRequest\x1a\x1b.transfer.v1.UploadResponse(\x01B\xaa\x01\n" +
 	"\x0fcom.transfer.v1B\vUploadProtoP\x01Z=github.com/borud/large-file-upload/gen/transfer/v1;transferv1\xa2\x02\x03TXX\xaa\x02\vTransfer.V1\xca\x02\vTransfer\\V1\xe2\x02\x17Transfer\\V1\\GPBMetadata\xea\x02\fTransfer::V1b\x06proto3"
 
 var (
@@ -370,18 +360,18 @@ var file_transfer_v1_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_transfer_v1_upload_proto_goTypes = []any{
 	(*CreateUploadRequest)(nil),  // 0: transfer.v1.CreateUploadRequest
 	(*CreateUploadResponse)(nil), // 1: transfer.v1.CreateUploadResponse
-	(*SyncUploadRequest)(nil),    // 2: transfer.v1.SyncUploadRequest
-	(*SyncUploadResponse)(nil),   // 3: transfer.v1.SyncUploadResponse
-	(*UploadBlockRequest)(nil),   // 4: transfer.v1.UploadBlockRequest
-	(*UploadBlockResponse)(nil),  // 5: transfer.v1.UploadBlockResponse
+	(*GetOffsetRequest)(nil),     // 2: transfer.v1.GetOffsetRequest
+	(*GetOffsetResponse)(nil),    // 3: transfer.v1.GetOffsetResponse
+	(*UploadRequest)(nil),        // 4: transfer.v1.UploadRequest
+	(*UploadResponse)(nil),       // 5: transfer.v1.UploadResponse
 }
 var file_transfer_v1_upload_proto_depIdxs = []int32{
 	0, // 0: transfer.v1.TransferService.CreateUpload:input_type -> transfer.v1.CreateUploadRequest
-	2, // 1: transfer.v1.TransferService.SyncUpload:input_type -> transfer.v1.SyncUploadRequest
-	4, // 2: transfer.v1.TransferService.UploadBlock:input_type -> transfer.v1.UploadBlockRequest
+	2, // 1: transfer.v1.TransferService.GetOffset:input_type -> transfer.v1.GetOffsetRequest
+	4, // 2: transfer.v1.TransferService.Upload:input_type -> transfer.v1.UploadRequest
 	1, // 3: transfer.v1.TransferService.CreateUpload:output_type -> transfer.v1.CreateUploadResponse
-	3, // 4: transfer.v1.TransferService.SyncUpload:output_type -> transfer.v1.SyncUploadResponse
-	5, // 5: transfer.v1.TransferService.UploadBlock:output_type -> transfer.v1.UploadBlockResponse
+	3, // 4: transfer.v1.TransferService.GetOffset:output_type -> transfer.v1.GetOffsetResponse
+	5, // 5: transfer.v1.TransferService.Upload:output_type -> transfer.v1.UploadResponse
 	3, // [3:6] is the sub-list for method output_type
 	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

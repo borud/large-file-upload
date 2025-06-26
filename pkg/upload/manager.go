@@ -1,9 +1,11 @@
+// Package upload is an upload manager
 package upload
 
 import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"os"
 	"path"
@@ -40,6 +42,7 @@ func NewManager(incoming, archive string) (*Manager, error) {
 	return &Manager{
 		incomingDirectory: incoming,
 		archiveDirectory:  archive,
+		uploads:           map[string]*Upload{},
 	}, nil
 }
 
@@ -69,7 +72,10 @@ func (m *Manager) CreateUpload(size int64, meta []byte) (*Upload, error) {
 		Size:     size,
 		file:     uploadFile,
 		Filename: fileName,
+		Meta:     meta,
 	}
+
+	m.uploads[id] = upload
 
 	return upload, nil
 }
@@ -91,6 +97,7 @@ func (m *Manager) GetUploads() []*Upload {
 
 // Finish upload and close file
 func (m *Manager) Finish(id string) error {
+	slog.Info("finishing", "id", id)
 	upload, ok := m.uploads[id]
 	if !ok {
 		return fmt.Errorf("upload [%s] does not exist", id)
