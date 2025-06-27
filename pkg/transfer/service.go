@@ -49,7 +49,7 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 		if err == io.EOF {
 			// if the stream ends before we have the entire file, that's an error condition.
 			if up == nil || up.Offset() != up.Size {
-				slog.Error("transfer stopped", "peer", peerAddr)
+				slog.Error("transfer stopped (EOF)", "id", up.ID, "peer", peerAddr)
 				return status.Error(codes.FailedPrecondition, "upload incomplete")
 			}
 
@@ -57,6 +57,7 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 			return stream.SendAndClose(&tv1.UploadResponse{})
 		}
 		if err != nil {
+			slog.Error("transfer stopped (ERR)", "id", up.ID, "peer", peerAddr, "err", err)
 			return status.Error(codes.Unknown, err.Error())
 		}
 
@@ -94,5 +95,5 @@ func (s *Service) GetOffset(_ context.Context, req *tv1.GetOffsetRequest) (*tv1.
 		return nil, status.Error(codes.NotFound, "upload not found")
 	}
 
-	return &tv1.GetOffsetResponse{Offset: upload.Offset()}, nil
+	return &tv1.GetOffsetResponse{Offset: upload.Offset(), PreferredBlocksize: s.PreferredBlockSize}, nil
 }

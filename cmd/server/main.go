@@ -4,7 +4,6 @@ package main
 import (
 	"log/slog"
 	"net"
-	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/borud/large-file-upload/pkg/transfer"
@@ -43,10 +42,7 @@ func main() {
 	}
 
 	slog.Info("starting gRPC server", "listenAddr", opt.ListenAddr)
-	err = grpcServer.Serve(&timeoutListener{
-		Listener: grpcListener,
-		Timeout:  10 * time.Second,
-	})
+	err = grpcServer.Serve(grpcListener)
 	if err != nil {
 		slog.Error("error exiting gRPC server", "listenAddr", opt.ListenAddr, "err", err)
 	}

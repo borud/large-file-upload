@@ -90,6 +90,7 @@ func main() {
 		})
 		if err != nil {
 			slog.Error("stream.Send failed", "offset", offset, "err", err)
+			return
 		}
 
 		offset += int64(n)

@@ -16,7 +16,8 @@ message GetOffsetRequest {
 }
 
 message GetOffsetResponse {
-	int64 offset 	= 1;
+	int64 offset 				= 1;
+	int64 preferred_blocksize	= 2;
 }
 
 message UploadRequest {

@@ -170,10 +170,11 @@ func (x *GetOffsetRequest) GetId() string {
 }
 
 type GetOffsetResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Offset        int64                  `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Offset             int64                  `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
+	PreferredBlocksize int64                  `protobuf:"varint,2,opt,name=preferred_blocksize,json=preferredBlocksize,proto3" json:"preferred_blocksize,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GetOffsetResponse) Reset() {
@@ -209,6 +210,13 @@ func (*GetOffsetResponse) Descriptor() ([]byte, []int) {
 func (x *GetOffsetResponse) GetOffset() int64 {
 	if x != nil {
 		return x.Offset
+	}
+	return 0
+}
+
+func (x *GetOffsetResponse) GetPreferredBlocksize() int64 {
+	if x != nil {
+		return x.PreferredBlocksize
 	}
 	return 0
 }
@@ -329,9 +337,10 @@ const file_transfer_v1_upload_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\x13preferred_blocksize\x18\x02 \x01(\x03R\x12preferredBlocksize\"\"\n" +
 	"\x10GetOffsetRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"+\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\\\n" +
 	"\x11GetOffsetResponse\x12\x16\n" +
-	"\x06offset\x18\x01 \x01(\x03R\x06offset\"c\n" +
+	"\x06offset\x18\x01 \x01(\x03R\x06offset\x12/\n" +
+	"\x13preferred_blocksize\x18\x02 \x01(\x03R\x12preferredBlocksize\"c\n" +
 	"\rUploadRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12\x16\n" +
