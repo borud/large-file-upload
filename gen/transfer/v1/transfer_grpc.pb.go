@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: transfer/v1/upload.proto
+// source: transfer/v1/transfer.proto
 
 package transferv1
 
@@ -22,6 +22,7 @@ const (
 	TransferService_CreateUpload_FullMethodName = "/transfer.v1.TransferService/CreateUpload"
 	TransferService_GetOffset_FullMethodName    = "/transfer.v1.TransferService/GetOffset"
 	TransferService_Upload_FullMethodName       = "/transfer.v1.TransferService/Upload"
+	TransferService_Download_FullMethodName     = "/transfer.v1.TransferService/Download"
 )
 
 // TransferServiceClient is the client API for TransferService service.
@@ -36,6 +37,8 @@ type TransferServiceClient interface {
 	GetOffset(ctx context.Context, in *GetOffsetRequest, opts ...grpc.CallOption) (*GetOffsetResponse, error)
 	// Upload creates an upload stream.
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
+	// Download creates a download stream.
+	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error)
 }
 
 type transferServiceClient struct {
@@ -79,6 +82,25 @@ func (c *transferServiceClient) Upload(ctx context.Context, opts ...grpc.CallOpt
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type TransferService_UploadClient = grpc.ClientStreamingClient[UploadRequest, UploadResponse]
 
+func (c *transferServiceClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &TransferService_ServiceDesc.Streams[1], TransferService_Download_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DownloadRequest, DownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type TransferService_DownloadClient = grpc.ServerStreamingClient[DownloadResponse]
+
 // TransferServiceServer is the server API for TransferService service.
 // All implementations should embed UnimplementedTransferServiceServer
 // for forward compatibility.
@@ -91,6 +113,8 @@ type TransferServiceServer interface {
 	GetOffset(context.Context, *GetOffsetRequest) (*GetOffsetResponse, error)
 	// Upload creates an upload stream.
 	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
+	// Download creates a download stream.
+	Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error
 }
 
 // UnimplementedTransferServiceServer should be embedded to have
@@ -108,6 +132,9 @@ func (UnimplementedTransferServiceServer) GetOffset(context.Context, *GetOffsetR
 }
 func (UnimplementedTransferServiceServer) Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+}
+func (UnimplementedTransferServiceServer) Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedTransferServiceServer) testEmbeddedByValue() {}
 
@@ -172,6 +199,17 @@ func _TransferService_Upload_Handler(srv interface{}, stream grpc.ServerStream) 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type TransferService_UploadServer = grpc.ClientStreamingServer[UploadRequest, UploadResponse]
 
+func _TransferService_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TransferServiceServer).Download(m, &grpc.GenericServerStream[DownloadRequest, DownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type TransferService_DownloadServer = grpc.ServerStreamingServer[DownloadResponse]
+
 // TransferService_ServiceDesc is the grpc.ServiceDesc for TransferService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -194,6 +232,11 @@ var TransferService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _TransferService_Upload_Handler,
 			ClientStreams: true,
 		},
+		{
+			StreamName:    "Download",
+			Handler:       _TransferService_Download_Handler,
+			ServerStreams: true,
+		},
 	},
-	Metadata: "transfer/v1/upload.proto",
+	Metadata: "transfer/v1/transfer.proto",
 }

@@ -1,4 +1,4 @@
-package upload
+package transfer
 
 import (
 	"crypto/rand"
@@ -12,9 +12,8 @@ import (
 func TestManager(t *testing.T) {
 	tmpRoot := t.TempDir()
 	incoming := path.Join(tmpRoot, "incoming")
-	archive := path.Join(tmpRoot, "archive")
 
-	m, err := NewManager(incoming, archive)
+	m, err := newManager(incoming)
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}

@@ -33,6 +33,7 @@ staticcheck:
 lint:
 	@echo "*** $@"
 	@revive ./...
+	@buf lint
 
 clean:
 	@echo "*** $@"
@@ -44,6 +45,7 @@ gen-clean:
 
 gen: gen-clean
 	@echo "*** generating gRPC interface"
+	@buf lint
 	@buf generate
 
 count:

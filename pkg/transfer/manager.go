@@ -1,5 +1,4 @@
-// Package upload is an upload manager
-package upload
+package transfer
 
 import (
 	"crypto/rand"
@@ -11,11 +10,10 @@ import (
 	"path"
 )
 
-// Manager takes care of managing uploads that are in progress
-type Manager struct {
+// uploadManager takes care of managing uploads that are in progress
+type uploadManager struct {
 	incomingDirectory string
-	archiveDirectory  string
-	uploads           map[string]*Upload
+	uploads           map[string]*upload
 }
 
 const (
@@ -27,27 +25,21 @@ const (
 	uploadIDNumBits = 128
 )
 
-// NewManager creates a new upload manager
-func NewManager(incoming, archive string) (*Manager, error) {
+// newManager creates a new upload manager
+func newManager(incoming string) (*uploadManager, error) {
 	err := os.MkdirAll(incoming, incomingDirPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create incoming directory [%s]: %w", incoming, err)
 	}
 
-	err = os.MkdirAll(archive, archiveDirPermissions)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create archive directory [%s]: %w", incoming, err)
-	}
-
-	return &Manager{
+	return &uploadManager{
 		incomingDirectory: incoming,
-		archiveDirectory:  archive,
-		uploads:           map[string]*Upload{},
+		uploads:           map[string]*upload{},
 	}, nil
 }
 
 // CreateUpload creates a new upload
-func (m *Manager) CreateUpload(size int64, meta []byte) (*Upload, error) {
+func (m *uploadManager) CreateUpload(size int64, meta []byte) (*upload, error) {
 	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), uploadIDNumBits))
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate ID: %w", err)
@@ -67,12 +59,12 @@ func (m *Manager) CreateUpload(size int64, meta []byte) (*Upload, error) {
 		return nil, fmt.Errorf("unable to create incoming file [%s]: %w", fileName, err)
 	}
 
-	upload := &Upload{
+	upload := &upload{
 		ID:       id,
 		Size:     size,
 		file:     uploadFile,
 		Filename: fileName,
-		Meta:     meta,
+		Metadata: meta,
 	}
 
 	m.uploads[id] = upload
@@ -81,13 +73,13 @@ func (m *Manager) CreateUpload(size int64, meta []byte) (*Upload, error) {
 }
 
 // GetUpload by id.  Returns nil if the upload does not exist.
-func (m *Manager) GetUpload(id string) *Upload {
+func (m *uploadManager) GetUpload(id string) *upload {
 	return m.uploads[id]
 }
 
 // GetUploads returns a slice of all the uploads currently in progress.
-func (m *Manager) GetUploads() []*Upload {
-	var uploads []*Upload
+func (m *uploadManager) GetUploads() []*upload {
+	var uploads []*upload
 	for _, v := range m.uploads {
 		uploads = append(uploads, v)
 	}
@@ -96,8 +88,8 @@ func (m *Manager) GetUploads() []*Upload {
 }
 
 // Finish upload and close file
-func (m *Manager) Finish(id string) error {
-	slog.Info("finishing", "id", id)
+func (m *uploadManager) Finish(id string) error {
+	slog.Debug("finishing", "id", id)
 	upload, ok := m.uploads[id]
 	if !ok {
 		return fmt.Errorf("upload [%s] does not exist", id)
@@ -114,7 +106,7 @@ func (m *Manager) Finish(id string) error {
 }
 
 // Shutdown the manager.
-func (m *Manager) Shutdown() error {
+func (m *uploadManager) Shutdown() error {
 	var errs error
 	for key := range m.uploads {
 		errs = errors.Join(errs, m.Finish(key))

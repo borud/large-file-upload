@@ -1,4 +1,4 @@
-package upload
+package transfer
 
 import (
 	"errors"
@@ -6,14 +6,14 @@ import (
 	"sync"
 )
 
-// Upload represents an active upload.  It keeps track of the offset of the upload.
+// upload represents an active upload.  It keeps track of the offset of the upload.
 // The offset is protected by a mutex so any changes to the underlying file will
 // be in sync with the writeOffset.
-type Upload struct {
+type upload struct {
 	ID          string
 	Size        int64
 	Filename    string
-	Meta        []byte
+	Metadata    []byte
 	mu          sync.RWMutex
 	file        *os.File
 	writeOffset int64
@@ -27,7 +27,7 @@ var (
 
 // Write bytes to file and update the write offset.  We use a mutex around this
 // since the write mutates what the value represents.
-func (u *Upload) Write(b []byte) (int, error) {
+func (u *upload) Write(b []byte) (int, error) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 
@@ -45,7 +45,7 @@ func (u *Upload) Write(b []byte) (int, error) {
 }
 
 // Offset returns the current offset of the upload.
-func (u *Upload) Offset() int64 {
+func (u *upload) Offset() int64 {
 	u.mu.RLock()
 	defer u.mu.RUnlock()
 

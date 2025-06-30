@@ -2,13 +2,24 @@ syntax = "proto3";
 package transfer.v1;
 
 message CreateUploadRequest {
-	int64 size 	= 2;
+	int64 size 		= 2;
 	bytes metadata	= 1;
 }
 
 message CreateUploadResponse {
 	string id 					= 1;
 	int64 preferred_blocksize	= 2;
+}
+
+message DownloadRequest{
+	string id					= 1;
+	int64 offset				= 2;
+	int64 preferred_blocksize	= 3;
+}
+
+message DownloadResponse{
+	bytes sha256	= 1;
+	bytes data 		= 2;
 }
 
 message GetOffsetRequest {
@@ -40,4 +51,7 @@ service TransferService {
 
 	// Upload creates an upload stream.
 	rpc Upload(stream UploadRequest) returns (UploadResponse);
+
+	// Download creates a download stream.
+	rpc Download(DownloadRequest) returns (stream DownloadResponse);
 } 

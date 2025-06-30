@@ -1,4 +1,4 @@
 # Next steps
 
-- [] rewrite cmd/client/main.go to use pkg/client
+- [] add checksumming
 - [] Write test for client

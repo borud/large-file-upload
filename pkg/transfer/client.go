@@ -2,12 +2,12 @@ package transfer
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
-	"time"
 
 	tv1 "github.com/borud/large-file-upload/gen/transfer/v1"
 	"google.golang.org/grpc"
@@ -16,10 +16,15 @@ import (
 
 // Client for the transfer service.
 type Client struct {
-	conn      *grpc.ClientConn
-	addr      string
-	client    tv1.TransferServiceClient
-	quitAfter int
+	config ClientConfig
+	conn   *grpc.ClientConn
+	client tv1.TransferServiceClient
+}
+
+// ClientConfig is the configuration parameters for the client.
+type ClientConfig struct {
+	ServerAddr string
+	QuitAfter  int
 }
 
 // uploadState is the upload state tracked throughout the upload and partially
@@ -34,15 +39,15 @@ type uploadState struct {
 const (
 	stateFileSuffix = "upload"
 
-	minBlockSize = 512 * 1024
-	maxBlockSize = 1024 * 1024
+	minBlockSize = 10 * 1024
+	maxBlockSize = 5 * 1024 * 1024
 
 	stateFilePermissions = 0600
 )
 
 // CreateClient creates a new transfer client.
-func CreateClient(addr string) (*Client, error) {
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func CreateClient(c ClientConfig) (*Client, error) {
+	conn, err := grpc.NewClient(c.ServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +55,7 @@ func CreateClient(addr string) (*Client, error) {
 	return &Client{
 		client: tv1.NewTransferServiceClient(conn),
 		conn:   conn,
-		addr:   addr,
+		config: c,
 	}, nil
 }
 
@@ -80,22 +85,22 @@ func (c *Client) Upload(filename string) error {
 	// create upload stream
 	stream, err := c.client.Upload(context.Background())
 	if err != nil {
-		return fmt.Errorf("error connecting to server [%s]: %w", c.addr, err)
+		return fmt.Errorf("error connecting to server [%s]: %w", c.config.ServerAddr, err)
 	}
 
 	buffer := make([]byte, state.BlockSize)
 	for i := 0; ; i++ {
-		slog.Info("->", "id", state.ID, "block", i, "offset", state.Offset)
-
 		n, err := in.Read(buffer)
 		if err == io.EOF {
 			break
 		}
 
+		checksum := sha256.Sum256(buffer[:n])
 		err = stream.Send(&tv1.UploadRequest{
 			Id:     state.ID,
 			Offset: state.Offset,
 			Data:   buffer[:n],
+			Sha256: checksum[:],
 		})
 		if err != nil {
 			return fmt.Errorf("upload failed: %w", err)
@@ -103,13 +108,24 @@ func (c *Client) Upload(filename string) error {
 
 		state.Offset += int64(n)
 
-		if c.quitAfter > 0 && i == c.quitAfter-1 {
-			slog.Info("quitting after QuitAfter blocks", "quitAfter", c.quitAfter)
-			slog.Info("kill client within 10 seconds if you want to simulate abrupt halt")
-			time.Sleep(10 * time.Second)
-			break
+		// this is just for testing purposes
+		if c.config.QuitAfter > 0 && i == c.config.QuitAfter-1 {
+			slog.Info("quitting after QuitAfter blocks", "quitAfter", c.config.QuitAfter)
+			return nil
 		}
+		slog.Info("->", "id", state.ID, "block", i, "offset", state.Offset)
 	}
+
+	// remove the state file since we're done uploading, but do this after we have
+	// closed the stream and received the result.  If there is an error there isn't
+	// anything sensible we can do about it.
+	defer func() {
+		stateFilename := c.stateFilename(filename)
+		err := os.Remove(stateFilename)
+		if err != nil {
+			slog.Error("error removing state file", "stateFilename", stateFilename, "err", err)
+		}
+	}()
 
 	_, err = stream.CloseAndRecv()
 	if err != nil {
