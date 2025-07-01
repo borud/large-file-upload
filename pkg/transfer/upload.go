@@ -10,9 +10,8 @@ import (
 // The offset is protected by a mutex so any changes to the underlying file will
 // be in sync with the writeOffset.
 type upload struct {
-	ID          string
+	ID          ID
 	Size        int64
-	Filename    string
 	Metadata    []byte
 	mu          sync.RWMutex
 	file        *os.File
@@ -50,4 +49,18 @@ func (u *upload) Offset() int64 {
 	defer u.mu.RUnlock()
 
 	return u.writeOffset
+}
+
+// Filename returns the name of the file we are writing to and "" if there is
+// no file. The name returned is the same that was presented to the Open()
+// call.
+func (u *upload) Filename() string {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	if u.file == nil {
+		return ""
+	}
+
+	return u.file.Name()
 }

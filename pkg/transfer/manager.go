@@ -1,69 +1,53 @@
 package transfer
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
-	"math/big"
-	"os"
-	"path"
 )
 
 // uploadManager takes care of managing uploads that are in progress
 type uploadManager struct {
 	incomingDirectory string
-	uploads           map[string]*upload
+	uploads           map[ID]*upload
+	fileStore         *FileStore
 }
-
-const (
-	incomingDirPermissions  = 0700
-	incomingFilePermissions = 0600
-	archiveDirPermissions   = 0700
-	archiveFilePermissions  = 0700
-
-	uploadIDNumBits = 128
-)
 
 // newManager creates a new upload manager
 func newManager(incoming string) (*uploadManager, error) {
-	err := os.MkdirAll(incoming, incomingDirPermissions)
+	fileStore, err := CreateFileStore(incoming)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create incoming directory [%s]: %w", incoming, err)
+		return nil, fmt.Errorf("failed to create filestore: %w", err)
 	}
 
 	return &uploadManager{
 		incomingDirectory: incoming,
-		uploads:           map[string]*upload{},
+		uploads:           map[ID]*upload{},
+		fileStore:         fileStore,
 	}, nil
 }
 
 // CreateUpload creates a new upload
 func (m *uploadManager) CreateUpload(size int64, meta []byte) (*upload, error) {
-	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), uploadIDNumBits))
+	id, err := NewID()
 	if err != nil {
-		return nil, fmt.Errorf("unable to generate ID: %w", err)
+		return nil, err
 	}
-
-	id := serial.Text(36)
 
 	_, ok := m.uploads[id]
 	if ok {
 		return nil, fmt.Errorf("inconsistency: id [%s] already exists", id)
 	}
 
-	fileName := path.Join(m.incomingDirectory, id)
-
-	uploadFile, err := os.OpenFile(fileName, os.O_CREATE|os.O_EXCL|os.O_WRONLY|os.O_SYNC, incomingFilePermissions)
+	uploadFile, err := m.fileStore.Create(id)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create incoming file [%s]: %w", fileName, err)
+		return nil, fmt.Errorf("unable to create incoming file: %w", err)
 	}
 
 	upload := &upload{
 		ID:       id,
 		Size:     size,
 		file:     uploadFile,
-		Filename: fileName,
 		Metadata: meta,
 	}
 
@@ -73,7 +57,7 @@ func (m *uploadManager) CreateUpload(size int64, meta []byte) (*upload, error) {
 }
 
 // GetUpload by id.  Returns nil if the upload does not exist.
-func (m *uploadManager) GetUpload(id string) *upload {
+func (m *uploadManager) GetUpload(id ID) *upload {
 	return m.uploads[id]
 }
 
@@ -88,7 +72,7 @@ func (m *uploadManager) GetUploads() []*upload {
 }
 
 // Finish upload and close file
-func (m *uploadManager) Finish(id string) error {
+func (m *uploadManager) Finish(id ID) error {
 	slog.Debug("finishing", "id", id)
 	upload, ok := m.uploads[id]
 	if !ok {
@@ -99,7 +83,7 @@ func (m *uploadManager) Finish(id string) error {
 
 	err := upload.file.Close()
 	if err != nil {
-		return fmt.Errorf("failed to close upload file [%s]: %w", upload.Filename, err)
+		return fmt.Errorf("failed to close upload file [%s]: %w", upload.Filename(), err)
 	}
 
 	return nil

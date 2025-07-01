@@ -1,36 +1,43 @@
 syntax = "proto3";
 package transfer.v1;
 
+// CreateUploadRequest creates an upload. The server allocates an ID to the
+// upload and can optionally decide if it wants to accept a file of the
+// specified size. The metadata is an opaque byte blob into which the client
+// can serialize any application specific metadata.
 message CreateUploadRequest {
 	int64 size 		= 2;
 	bytes metadata	= 1;
 }
 
+// CreateUploadResponse returns the ID of the upload and the block size
+// preferred by the server.  Note that the client can choose to ingnore this
+// preferred block size, but you should not exceed the default gRPC message
+// size of 4Mb (currently) unless you know the server was configured to
+// handle greater message sizes.  You can set the maximum message size on the
+// server using the `grpc.MaxRecvMsgSize()` on the grpc.NewServer call.
 message CreateUploadResponse {
 	string id 					= 1;
 	int64 preferred_blocksize	= 2;
 }
 
-message DownloadRequest{
-	string id					= 1;
-	int64 offset				= 2;
-	int64 preferred_blocksize	= 3;
-}
-
-message DownloadResponse{
-	bytes sha256	= 1;
-	bytes data 		= 2;
-}
-
+// GetOffsetRequest requests the offset for a upload in progress. This enables clients
+// to resume partial uploads by inquiring how much of the file has already been
+// uploaded.
 message GetOffsetRequest {
 	string id = 1;
 }
 
+// GetOffsetResponse contains the current offset of the file (how much has been
+// uploaded) and the preferred transfer block size of the server.
 message GetOffsetResponse {
 	int64 offset 				= 1;
 	int64 preferred_blocksize	= 2;
 }
 
+// UploadRequest is the data structure that contains a block of data to be uploaded.
+// It specifies the upload ID, the offset, the checksum of the data and the data 
+// itself.
 message UploadRequest {
 	string id		= 1;
 	int64 offset	= 2;
@@ -38,10 +45,40 @@ message UploadRequest {
 	bytes data 		= 4;
 }
 
+// UploadResponse is an empty message.
 message UploadResponse {}
 
+
+// DownloadRequest specifies a file you want to download (by id), the offset from
+// which you want to start and the block size preferred by the client. The server
+// is not required to honor the requested block size, but unless the block size
+// is unreasonably large, it should try to accomodate the client.
+//
+// Downloading, unlike uploading, is a single call because the client will 
+// have to keep track of the download in order to resume.  If you want to
+// be able to resume downloads.
+message DownloadRequest {
+	string id					= 1;
+	int64 offset				= 2;
+	int64 preferred_blocksize	= 3;
+}
+
+// DownloadResponse contains a block of data and its checksum. It is strongly 
+// recommended that the client verify the checksum.
+message DownloadResponse {
+	bytes sha256	= 1;
+	bytes data 		= 2;
+}
+
+// TransferService is a service for reliable upload and download of files. Rather
+// than using file names the service uses file IDs and any file names, and associated
+// data is stored in a metadata byte slice that is application specific. Any mechanism
+// for resolving file names to file IDs is external to this service and must be 
+// implemented by the application in which it is used.
 service TransferService {
-	// CreateUpload is called to create a new upload.
+	// CreateUpload is called to create a new upload. When a new upload is created
+	// a unique ID is allocated for the upload and subsequent Upload() calls use
+	// this ID.
 	rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
 
 	// GetOffset is used when we want to resume an upload and we need to know
@@ -49,9 +86,11 @@ service TransferService {
 	// the upload has somehow gotten itself deleted, the code field will indicate this.
 	rpc GetOffset(GetOffsetRequest) returns (GetOffsetResponse);
 
-	// Upload creates an upload stream.
+	// Upload creates an upload stream used for writing the data to the server one
+	// block at a time.
 	rpc Upload(stream UploadRequest) returns (UploadResponse);
 
-	// Download creates a download stream.
+	// Download creates a download stream that downloads a file identified by the ID
+	// one block at a time.
 	rpc Download(DownloadRequest) returns (stream DownloadResponse);
 } 

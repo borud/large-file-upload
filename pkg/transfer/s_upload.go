@@ -24,11 +24,11 @@ func (s *Service) CreateUpload(_ context.Context, req *tv1.CreateUploadRequest) 
 	}
 
 	if s.config.UploadCreatedHook != nil {
-		s.config.UploadCreatedHook(upload.Filename, upload.Size, upload.Offset(), upload.Metadata)
+		s.config.UploadCreatedHook(upload.Filename(), upload.Size, upload.Offset(), upload.Metadata)
 	}
 
 	return &tv1.CreateUploadResponse{
-		Id:                 upload.ID,
+		Id:                 upload.ID.String(),
 		PreferredBlocksize: s.config.PreferredBlockSize,
 	}, nil
 }
@@ -62,7 +62,7 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 			// Invariant: if we are here the upload succeeded
 
 			if s.config.UploadFinishedHook != nil {
-				s.config.UploadFinishedHook(up.Filename, up.Size, up.Offset(), up.Metadata)
+				s.config.UploadFinishedHook(up.Filename(), up.Size, up.Offset(), up.Metadata)
 			}
 
 			err := s.UploadManager.Finish(up.ID)
@@ -79,9 +79,14 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 			return status.Error(codes.Unknown, err.Error())
 		}
 
+		id, err := ParseID(req.Id)
+		if err != nil {
+			return err
+		}
+
 		// if this is the first message we have to get the upload instance
 		if up == nil {
-			up = s.UploadManager.GetUpload(req.Id)
+			up = s.UploadManager.GetUpload(id)
 			if up == nil {
 				return status.Error(codes.NotFound, "upload id not found")
 			}
@@ -110,7 +115,7 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 		}
 
 		if s.config.UploadProgressHook != nil {
-			s.config.UploadProgressHook(up.Filename, up.Size, up.Offset(), up.Metadata)
+			s.config.UploadProgressHook(up.Filename(), up.Size, up.Offset(), up.Metadata)
 		}
 
 		slog.Debug("wrote block", "id", req.Id, "offset", up.Offset(), "size", n, "checksum", hex.EncodeToString(verifyChecksum[:]))
@@ -119,7 +124,12 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 
 // GetOffset returns the current offset for an active upload identified by req.Id.
 func (s *Service) GetOffset(_ context.Context, req *tv1.GetOffsetRequest) (*tv1.GetOffsetResponse, error) {
-	upload := s.UploadManager.GetUpload(req.Id)
+	id, err := ParseID(req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	upload := s.UploadManager.GetUpload(id)
 	if upload == nil {
 		return nil, status.Error(codes.NotFound, "upload not found")
 	}

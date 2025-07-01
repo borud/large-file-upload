@@ -7,8 +7,6 @@ import (
 )
 
 // Download file by id starting at offset.
-//
-// TODO(borud): implement!
 func (s *Service) Download(req *tv1.DownloadRequest, stream tv1.TransferService_DownloadServer) error {
 	slog.Info("download", "id", req.Id, "offset", req.Offset, "blocksize", req.PreferredBlocksize)
 
