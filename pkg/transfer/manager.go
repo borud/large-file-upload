@@ -82,7 +82,7 @@ func (m *uploadManager) Finish(id ID) error {
 	return nil
 }
 
-// Shutdown the manager.
+// Shutdown the manager.  Closes any remaining unclosed files.
 func (m *uploadManager) Shutdown() error {
 	var errs error
 	for key := range m.uploads {

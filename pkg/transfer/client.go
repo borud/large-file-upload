@@ -1,9 +1,11 @@
 package transfer
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -37,11 +39,7 @@ type uploadState struct {
 }
 
 const (
-	stateFileSuffix = "upload"
-
-	minBlockSize = 10 * 1024
-	maxBlockSize = 5 * 1024 * 1024
-
+	stateFileSuffix      = "upload"
 	stateFilePermissions = 0600
 )
 
@@ -60,32 +58,32 @@ func CreateClient(c ClientConfig) (*Client, error) {
 }
 
 // Upload a file to the transfer server.
-func (c *Client) Upload(filename string) error {
+func (c *Client) Upload(filename string) (string, error) {
 	state, err := c.createOrResumeUpload(filename, []byte{0})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	in, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("error opening file [%s]: %w", filename, err)
+		return "", fmt.Errorf("error opening file [%s]: %w", filename, err)
 	}
 	defer in.Close()
 
 	offset, err := in.Seek(state.Offset, io.SeekStart)
 	if err != nil {
-		return fmt.Errorf("failed to seek to correct offset: %w", err)
+		return "", fmt.Errorf("failed to seek to correct offset: %w", err)
 	}
 
 	if offset != state.Offset {
 		// this shouldn't happen unless something is really wrong
-		return fmt.Errorf("offset mismatch, state=%d file=%d", state.Offset, offset)
+		return "", fmt.Errorf("offset mismatch, state=%d file=%d", state.Offset, offset)
 	}
 
 	// create upload stream
 	stream, err := c.client.Upload(context.Background())
 	if err != nil {
-		return fmt.Errorf("error connecting to server [%s]: %w", c.config.ServerAddr, err)
+		return "", fmt.Errorf("error connecting to server [%s]: %w", c.config.ServerAddr, err)
 	}
 
 	buffer := make([]byte, state.BlockSize)
@@ -103,7 +101,7 @@ func (c *Client) Upload(filename string) error {
 			Sha256: checksum[:],
 		})
 		if err != nil {
-			return fmt.Errorf("upload failed: %w", err)
+			return "", fmt.Errorf("upload failed: %w", err)
 		}
 
 		state.Offset += int64(n)
@@ -111,9 +109,9 @@ func (c *Client) Upload(filename string) error {
 		// this is just for testing purposes
 		if c.config.QuitAfter > 0 && i == c.config.QuitAfter-1 {
 			slog.Info("quitting after QuitAfter blocks", "quitAfter", c.config.QuitAfter)
-			return nil
+			return state.ID, nil
 		}
-		slog.Info("->", "id", state.ID, "block", i, "offset", state.Offset)
+		slog.Debug("->", "id", state.ID, "block", i, "offset", state.Offset)
 	}
 
 	// remove the state file since we're done uploading, but do this after we have
@@ -129,9 +127,51 @@ func (c *Client) Upload(filename string) error {
 
 	_, err = stream.CloseAndRecv()
 	if err != nil {
-		return fmt.Errorf("error closing connection: %w", err)
+		return "", fmt.Errorf("error closing connection: %w", err)
 	}
 
+	return state.ID, nil
+}
+
+// Download file by id and place it in file named dstFile.  If the destination file exists
+// an error is returned.
+func (c *Client) Download(id ID, dstFile string) error {
+	// open destination file first so we can detect if this fails before we
+	// bother the server.
+	out, err := os.OpenFile(dstFile, os.O_CREATE|os.O_APPEND|os.O_EXCL|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to create output file [%s]: %w", dstFile, err)
+	}
+	defer out.Close()
+
+	stream, err := c.client.Download(context.Background(), &tv1.DownloadRequest{
+		Id:     id.String(),
+		Offset: 0,
+	})
+	if err != nil {
+		return err
+	}
+
+	for {
+		res, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		checksum := sha256.Sum256(res.Data)
+		if !bytes.Equal(checksum[:], res.Sha256) {
+			return fmt.Errorf("checsum verification failed")
+		}
+
+		_, err = out.Write(res.Data)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -172,7 +212,7 @@ func (c *Client) createOrResumeUpload(filename string, meta []byte) (uploadState
 			ID:        state.ID,
 			Offset:    resp.Offset,
 			FileSize:  info.Size(),
-			BlockSize: c.clampBlockSize(resp.PreferredBlocksize),
+			BlockSize: clampBlockSize(resp.PreferredBlocksize),
 		}, err
 	}
 
@@ -198,7 +238,7 @@ func (c *Client) createOrResumeUpload(filename string, meta []byte) (uploadState
 		ID:        resp.Id,
 		FileSize:  info.Size(),
 		Offset:    0,
-		BlockSize: c.clampBlockSize(resp.PreferredBlocksize),
+		BlockSize: clampBlockSize(resp.PreferredBlocksize),
 	}, nil
 }
 
@@ -215,8 +255,4 @@ func (c *Client) saveState(state uploadState, filename string) error {
 
 func (c *Client) stateFilename(filename string) string {
 	return filename + "." + stateFileSuffix
-}
-
-func (c *Client) clampBlockSize(bs int64) int64 {
-	return min(max(bs, minBlockSize), maxBlockSize)
 }

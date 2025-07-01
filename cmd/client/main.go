@@ -26,12 +26,19 @@ func main() {
 		return
 	}
 
+	id := ""
+
 	for _, filename := range opt.Filenames {
-		err := client.Upload(filename)
+		id, err = client.Upload(filename)
 		if err != nil {
 			slog.Error("error uploading file", "filename", filename, "err", err)
 			return
 		}
-		slog.Info("uploaded file", "filename", filename)
+		slog.Info("uploaded file", "filename", filename, "id", id)
+	}
+
+	err = client.Download(transfer.ID(id), "outputfile")
+	if err != nil {
+		slog.Error("error downloading", "err", err)
 	}
 }
