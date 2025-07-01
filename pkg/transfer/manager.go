@@ -8,22 +8,15 @@ import (
 
 // uploadManager takes care of managing uploads that are in progress
 type uploadManager struct {
-	incomingDirectory string
-	uploads           map[ID]*upload
-	fileStore         *FileStore
+	uploads   map[ID]*upload
+	fileStore *FileStore
 }
 
 // newManager creates a new upload manager
-func newManager(incoming string) (*uploadManager, error) {
-	fileStore, err := CreateFileStore(incoming)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create filestore: %w", err)
-	}
-
+func newManager(fileStore *FileStore) (*uploadManager, error) {
 	return &uploadManager{
-		incomingDirectory: incoming,
-		uploads:           map[ID]*upload{},
-		fileStore:         fileStore,
+		uploads:   map[ID]*upload{},
+		fileStore: fileStore,
 	}, nil
 }
 

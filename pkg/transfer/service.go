@@ -1,9 +1,12 @@
 // Package transfer implements the gRPC service for uploads.
 package transfer
 
+import "fmt"
+
 // Service implements the upload service
 type Service struct {
 	UploadManager *uploadManager
+	fileStore     *FileStore
 	config        Config
 }
 
@@ -22,7 +25,12 @@ type HookFunc func(filename string, size int64, offset int64, metadata []byte)
 
 // NewService creates a new transfer service
 func NewService(c Config) (*Service, error) {
-	uploadManager, err := newManager(c.IncomingDir)
+	fileStore, err := CreateFileStore(c.IncomingDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filestore: %w", err)
+	}
+
+	uploadManager, err := newManager(fileStore)
 	if err != nil {
 		return nil, err
 	}
@@ -30,5 +38,6 @@ func NewService(c Config) (*Service, error) {
 	return &Service{
 		UploadManager: uploadManager,
 		config:        c,
+		fileStore:     fileStore,
 	}, nil
 }

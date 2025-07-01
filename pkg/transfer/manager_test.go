@@ -13,7 +13,10 @@ func TestManager(t *testing.T) {
 	tmpRoot := t.TempDir()
 	incoming := path.Join(tmpRoot, "incoming")
 
-	m, err := newManager(incoming)
+	fs, err := CreateFileStore(incoming)
+	require.NoError(t, err)
+
+	m, err := newManager(fs)
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}

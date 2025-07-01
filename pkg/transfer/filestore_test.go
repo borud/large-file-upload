@@ -71,6 +71,4 @@ func TestFileStore(t *testing.T) {
 	removeEmptyDirsUpTo(target, root)
 	require.NoDirExists(t, target)
 	require.DirExists(t, root)
-
-	// slog.Info("path for id", "root", dir, "id", id, "path", path)
 }
