@@ -13,6 +13,7 @@ type upload struct {
 	ID          ID
 	Size        int64
 	Metadata    []byte
+	FileSHA256  []byte
 	mu          sync.RWMutex
 	file        *os.File
 	writeOffset int64

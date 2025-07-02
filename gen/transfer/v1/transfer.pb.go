@@ -21,10 +21,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// CreateUploadRequest creates an upload. The server allocates an ID to the
+// upload and can optionally decide if it wants to accept a file of the
+// specified size. The metadata is an opaque byte blob into which the client
+// can serialize any application specific metadata.
 type CreateUploadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Size          int64                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
-	Metadata      []byte                 `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Size          int64                  `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
+	FileSha256    []byte                 `protobuf:"bytes,2,opt,name=file_sha256,json=fileSha256,proto3" json:"file_sha256,omitempty"`
+	Metadata      []byte                 `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -66,6 +71,13 @@ func (x *CreateUploadRequest) GetSize() int64 {
 	return 0
 }
 
+func (x *CreateUploadRequest) GetFileSha256() []byte {
+	if x != nil {
+		return x.FileSha256
+	}
+	return nil
+}
+
 func (x *CreateUploadRequest) GetMetadata() []byte {
 	if x != nil {
 		return x.Metadata
@@ -73,6 +85,12 @@ func (x *CreateUploadRequest) GetMetadata() []byte {
 	return nil
 }
 
+// CreateUploadResponse returns the ID of the upload and the block size
+// preferred by the server.  Note that the client can choose to ingnore this
+// preferred block size, but you should not exceed the default gRPC message
+// size of 4Mb (currently) unless you know the server was configured to
+// handle greater message sizes.  You can set the maximum message size on the
+// server using the `grpc.MaxRecvMsgSize()` on the grpc.NewServer call.
 type CreateUploadResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -125,118 +143,9 @@ func (x *CreateUploadResponse) GetPreferredBlocksize() int64 {
 	return 0
 }
 
-type DownloadRequest struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Offset             int64                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-	PreferredBlocksize int64                  `protobuf:"varint,3,opt,name=preferred_blocksize,json=preferredBlocksize,proto3" json:"preferred_blocksize,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
-}
-
-func (x *DownloadRequest) Reset() {
-	*x = DownloadRequest{}
-	mi := &file_transfer_v1_transfer_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DownloadRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DownloadRequest) ProtoMessage() {}
-
-func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_transfer_v1_transfer_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DownloadRequest.ProtoReflect.Descriptor instead.
-func (*DownloadRequest) Descriptor() ([]byte, []int) {
-	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *DownloadRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *DownloadRequest) GetOffset() int64 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
-}
-
-func (x *DownloadRequest) GetPreferredBlocksize() int64 {
-	if x != nil {
-		return x.PreferredBlocksize
-	}
-	return 0
-}
-
-type DownloadResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Sha256        []byte                 `protobuf:"bytes,1,opt,name=sha256,proto3" json:"sha256,omitempty"`
-	Data          []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DownloadResponse) Reset() {
-	*x = DownloadResponse{}
-	mi := &file_transfer_v1_transfer_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DownloadResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DownloadResponse) ProtoMessage() {}
-
-func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_transfer_v1_transfer_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DownloadResponse.ProtoReflect.Descriptor instead.
-func (*DownloadResponse) Descriptor() ([]byte, []int) {
-	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *DownloadResponse) GetSha256() []byte {
-	if x != nil {
-		return x.Sha256
-	}
-	return nil
-}
-
-func (x *DownloadResponse) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
+// GetOffsetRequest requests the offset for a upload in progress. This enables clients
+// to resume partial uploads by inquiring how much of the file has already been
+// uploaded.
 type GetOffsetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -246,7 +155,7 @@ type GetOffsetRequest struct {
 
 func (x *GetOffsetRequest) Reset() {
 	*x = GetOffsetRequest{}
-	mi := &file_transfer_v1_transfer_proto_msgTypes[4]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +167,7 @@ func (x *GetOffsetRequest) String() string {
 func (*GetOffsetRequest) ProtoMessage() {}
 
 func (x *GetOffsetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_transfer_v1_transfer_proto_msgTypes[4]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -271,7 +180,7 @@ func (x *GetOffsetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOffsetRequest.ProtoReflect.Descriptor instead.
 func (*GetOffsetRequest) Descriptor() ([]byte, []int) {
-	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{4}
+	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetOffsetRequest) GetId() string {
@@ -281,6 +190,8 @@ func (x *GetOffsetRequest) GetId() string {
 	return ""
 }
 
+// GetOffsetResponse contains the current offset of the file (how much has been
+// uploaded) and the preferred transfer block size of the server.
 type GetOffsetResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Offset             int64                  `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
@@ -291,7 +202,7 @@ type GetOffsetResponse struct {
 
 func (x *GetOffsetResponse) Reset() {
 	*x = GetOffsetResponse{}
-	mi := &file_transfer_v1_transfer_proto_msgTypes[5]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -303,7 +214,7 @@ func (x *GetOffsetResponse) String() string {
 func (*GetOffsetResponse) ProtoMessage() {}
 
 func (x *GetOffsetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_transfer_v1_transfer_proto_msgTypes[5]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -316,7 +227,7 @@ func (x *GetOffsetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOffsetResponse.ProtoReflect.Descriptor instead.
 func (*GetOffsetResponse) Descriptor() ([]byte, []int) {
-	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{5}
+	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetOffsetResponse) GetOffset() int64 {
@@ -333,6 +244,9 @@ func (x *GetOffsetResponse) GetPreferredBlocksize() int64 {
 	return 0
 }
 
+// UploadRequest is the data structure that contains a block of data to be uploaded.
+// It specifies the upload ID, the offset, the checksum of the data and the data
+// itself.
 type UploadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -345,7 +259,7 @@ type UploadRequest struct {
 
 func (x *UploadRequest) Reset() {
 	*x = UploadRequest{}
-	mi := &file_transfer_v1_transfer_proto_msgTypes[6]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -357,7 +271,7 @@ func (x *UploadRequest) String() string {
 func (*UploadRequest) ProtoMessage() {}
 
 func (x *UploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_transfer_v1_transfer_proto_msgTypes[6]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -370,7 +284,7 @@ func (x *UploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadRequest.ProtoReflect.Descriptor instead.
 func (*UploadRequest) Descriptor() ([]byte, []int) {
-	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{6}
+	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *UploadRequest) GetId() string {
@@ -401,6 +315,7 @@ func (x *UploadRequest) GetData() []byte {
 	return nil
 }
 
+// UploadResponse is an empty message.
 type UploadResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -409,7 +324,7 @@ type UploadResponse struct {
 
 func (x *UploadResponse) Reset() {
 	*x = UploadResponse{}
-	mi := &file_transfer_v1_transfer_proto_msgTypes[7]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -421,7 +336,7 @@ func (x *UploadResponse) String() string {
 func (*UploadResponse) ProtoMessage() {}
 
 func (x *UploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_transfer_v1_transfer_proto_msgTypes[7]
+	mi := &file_transfer_v1_transfer_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -434,27 +349,144 @@ func (x *UploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadResponse.ProtoReflect.Descriptor instead.
 func (*UploadResponse) Descriptor() ([]byte, []int) {
+	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{5}
+}
+
+// DownloadRequest specifies a file you want to download (by id), the offset from
+// which you want to start and the block size preferred by the client. The server
+// is not required to honor the requested block size, but unless the block size
+// is unreasonably large, it should try to accomodate the client.
+//
+// Downloading, unlike uploading, is a single call because the client will
+// have to keep track of the download in order to resume.  If you want to
+// be able to resume downloads.
+type DownloadRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Offset             int64                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	PreferredBlocksize int64                  `protobuf:"varint,3,opt,name=preferred_blocksize,json=preferredBlocksize,proto3" json:"preferred_blocksize,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *DownloadRequest) Reset() {
+	*x = DownloadRequest{}
+	mi := &file_transfer_v1_transfer_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadRequest) ProtoMessage() {}
+
+func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_transfer_v1_transfer_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadRequest.ProtoReflect.Descriptor instead.
+func (*DownloadRequest) Descriptor() ([]byte, []int) {
+	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DownloadRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DownloadRequest) GetOffset() int64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *DownloadRequest) GetPreferredBlocksize() int64 {
+	if x != nil {
+		return x.PreferredBlocksize
+	}
+	return 0
+}
+
+// DownloadResponse contains a block of data and its checksum. It is strongly
+// recommended that the client verify the checksum.
+type DownloadResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sha256        []byte                 `protobuf:"bytes,1,opt,name=sha256,proto3" json:"sha256,omitempty"`
+	Data          []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadResponse) Reset() {
+	*x = DownloadResponse{}
+	mi := &file_transfer_v1_transfer_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadResponse) ProtoMessage() {}
+
+func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_transfer_v1_transfer_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadResponse.ProtoReflect.Descriptor instead.
+func (*DownloadResponse) Descriptor() ([]byte, []int) {
 	return file_transfer_v1_transfer_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DownloadResponse) GetSha256() []byte {
+	if x != nil {
+		return x.Sha256
+	}
+	return nil
+}
+
+func (x *DownloadResponse) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
 }
 
 var File_transfer_v1_transfer_proto protoreflect.FileDescriptor
 
 const file_transfer_v1_transfer_proto_rawDesc = "" +
 	"\n" +
-	"\x1atransfer/v1/transfer.proto\x12\vtransfer.v1\"E\n" +
+	"\x1atransfer/v1/transfer.proto\x12\vtransfer.v1\"f\n" +
 	"\x13CreateUploadRequest\x12\x12\n" +
-	"\x04size\x18\x02 \x01(\x03R\x04size\x12\x1a\n" +
-	"\bmetadata\x18\x01 \x01(\fR\bmetadata\"W\n" +
+	"\x04size\x18\x01 \x01(\x03R\x04size\x12\x1f\n" +
+	"\vfile_sha256\x18\x02 \x01(\fR\n" +
+	"fileSha256\x12\x1a\n" +
+	"\bmetadata\x18\x03 \x01(\fR\bmetadata\"W\n" +
 	"\x14CreateUploadResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
-	"\x13preferred_blocksize\x18\x02 \x01(\x03R\x12preferredBlocksize\"j\n" +
-	"\x0fDownloadRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12/\n" +
-	"\x13preferred_blocksize\x18\x03 \x01(\x03R\x12preferredBlocksize\">\n" +
-	"\x10DownloadResponse\x12\x16\n" +
-	"\x06sha256\x18\x01 \x01(\fR\x06sha256\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data\"\"\n" +
+	"\x13preferred_blocksize\x18\x02 \x01(\x03R\x12preferredBlocksize\"\"\n" +
 	"\x10GetOffsetRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\\\n" +
 	"\x11GetOffsetResponse\x12\x16\n" +
@@ -465,7 +497,14 @@ const file_transfer_v1_transfer_proto_rawDesc = "" +
 	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12\x16\n" +
 	"\x06sha256\x18\x03 \x01(\fR\x06sha256\x12\x12\n" +
 	"\x04data\x18\x04 \x01(\fR\x04data\"\x10\n" +
-	"\x0eUploadResponse2\xc2\x02\n" +
+	"\x0eUploadResponse\"j\n" +
+	"\x0fDownloadRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12/\n" +
+	"\x13preferred_blocksize\x18\x03 \x01(\x03R\x12preferredBlocksize\">\n" +
+	"\x10DownloadResponse\x12\x16\n" +
+	"\x06sha256\x18\x01 \x01(\fR\x06sha256\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data2\xc2\x02\n" +
 	"\x0fTransferService\x12S\n" +
 	"\fCreateUpload\x12 .transfer.v1.CreateUploadRequest\x1a!.transfer.v1.CreateUploadResponse\x12J\n" +
 	"\tGetOffset\x12\x1d.transfer.v1.GetOffsetRequest\x1a\x1e.transfer.v1.GetOffsetResponse\x12C\n" +
@@ -489,22 +528,22 @@ var file_transfer_v1_transfer_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_transfer_v1_transfer_proto_goTypes = []any{
 	(*CreateUploadRequest)(nil),  // 0: transfer.v1.CreateUploadRequest
 	(*CreateUploadResponse)(nil), // 1: transfer.v1.CreateUploadResponse
-	(*DownloadRequest)(nil),      // 2: transfer.v1.DownloadRequest
-	(*DownloadResponse)(nil),     // 3: transfer.v1.DownloadResponse
-	(*GetOffsetRequest)(nil),     // 4: transfer.v1.GetOffsetRequest
-	(*GetOffsetResponse)(nil),    // 5: transfer.v1.GetOffsetResponse
-	(*UploadRequest)(nil),        // 6: transfer.v1.UploadRequest
-	(*UploadResponse)(nil),       // 7: transfer.v1.UploadResponse
+	(*GetOffsetRequest)(nil),     // 2: transfer.v1.GetOffsetRequest
+	(*GetOffsetResponse)(nil),    // 3: transfer.v1.GetOffsetResponse
+	(*UploadRequest)(nil),        // 4: transfer.v1.UploadRequest
+	(*UploadResponse)(nil),       // 5: transfer.v1.UploadResponse
+	(*DownloadRequest)(nil),      // 6: transfer.v1.DownloadRequest
+	(*DownloadResponse)(nil),     // 7: transfer.v1.DownloadResponse
 }
 var file_transfer_v1_transfer_proto_depIdxs = []int32{
 	0, // 0: transfer.v1.TransferService.CreateUpload:input_type -> transfer.v1.CreateUploadRequest
-	4, // 1: transfer.v1.TransferService.GetOffset:input_type -> transfer.v1.GetOffsetRequest
-	6, // 2: transfer.v1.TransferService.Upload:input_type -> transfer.v1.UploadRequest
-	2, // 3: transfer.v1.TransferService.Download:input_type -> transfer.v1.DownloadRequest
+	2, // 1: transfer.v1.TransferService.GetOffset:input_type -> transfer.v1.GetOffsetRequest
+	4, // 2: transfer.v1.TransferService.Upload:input_type -> transfer.v1.UploadRequest
+	6, // 3: transfer.v1.TransferService.Download:input_type -> transfer.v1.DownloadRequest
 	1, // 4: transfer.v1.TransferService.CreateUpload:output_type -> transfer.v1.CreateUploadResponse
-	5, // 5: transfer.v1.TransferService.GetOffset:output_type -> transfer.v1.GetOffsetResponse
-	7, // 6: transfer.v1.TransferService.Upload:output_type -> transfer.v1.UploadResponse
-	3, // 7: transfer.v1.TransferService.Download:output_type -> transfer.v1.DownloadResponse
+	3, // 5: transfer.v1.TransferService.GetOffset:output_type -> transfer.v1.GetOffsetResponse
+	5, // 6: transfer.v1.TransferService.Upload:output_type -> transfer.v1.UploadResponse
+	7, // 7: transfer.v1.TransferService.Download:output_type -> transfer.v1.DownloadResponse
 	4, // [4:8] is the sub-list for method output_type
 	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

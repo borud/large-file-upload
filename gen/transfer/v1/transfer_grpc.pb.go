@@ -28,16 +28,26 @@ const (
 // TransferServiceClient is the client API for TransferService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// TransferService is a service for reliable upload and download of files. Rather
+// than using file names the service uses file IDs and any file names, and associated
+// data is stored in a metadata byte slice that is application specific. Any mechanism
+// for resolving file names to file IDs is external to this service and must be
+// implemented by the application in which it is used.
 type TransferServiceClient interface {
-	// CreateUpload is called to create a new upload.
+	// CreateUpload is called to create a new upload. When a new upload is created
+	// a unique ID is allocated for the upload and subsequent Upload() calls use
+	// this ID.
 	CreateUpload(ctx context.Context, in *CreateUploadRequest, opts ...grpc.CallOption) (*CreateUploadResponse, error)
 	// GetOffset is used when we want to resume an upload and we need to know
 	// what the current offset on the server side is.  If the server has restarted or
 	// the upload has somehow gotten itself deleted, the code field will indicate this.
 	GetOffset(ctx context.Context, in *GetOffsetRequest, opts ...grpc.CallOption) (*GetOffsetResponse, error)
-	// Upload creates an upload stream.
+	// Upload creates an upload stream used for writing the data to the server one
+	// block at a time.
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
-	// Download creates a download stream.
+	// Download creates a download stream that downloads a file identified by the ID
+	// one block at a time.
 	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error)
 }
 
@@ -104,16 +114,26 @@ type TransferService_DownloadClient = grpc.ServerStreamingClient[DownloadRespons
 // TransferServiceServer is the server API for TransferService service.
 // All implementations should embed UnimplementedTransferServiceServer
 // for forward compatibility.
+//
+// TransferService is a service for reliable upload and download of files. Rather
+// than using file names the service uses file IDs and any file names, and associated
+// data is stored in a metadata byte slice that is application specific. Any mechanism
+// for resolving file names to file IDs is external to this service and must be
+// implemented by the application in which it is used.
 type TransferServiceServer interface {
-	// CreateUpload is called to create a new upload.
+	// CreateUpload is called to create a new upload. When a new upload is created
+	// a unique ID is allocated for the upload and subsequent Upload() calls use
+	// this ID.
 	CreateUpload(context.Context, *CreateUploadRequest) (*CreateUploadResponse, error)
 	// GetOffset is used when we want to resume an upload and we need to know
 	// what the current offset on the server side is.  If the server has restarted or
 	// the upload has somehow gotten itself deleted, the code field will indicate this.
 	GetOffset(context.Context, *GetOffsetRequest) (*GetOffsetResponse, error)
-	// Upload creates an upload stream.
+	// Upload creates an upload stream used for writing the data to the server one
+	// block at a time.
 	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
-	// Download creates a download stream.
+	// Download creates a download stream that downloads a file identified by the ID
+	// one block at a time.
 	Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error
 }
 

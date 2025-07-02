@@ -25,7 +25,7 @@ func TestManager(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			upload, err := m.CreateUpload(1000, []byte{0, 0})
+			upload, err := m.CreateUpload(1000, []byte{}, []byte{0, 0})
 			require.NoError(t, err)
 
 			defer m.Finish(upload.ID)

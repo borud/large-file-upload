@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -17,7 +18,7 @@ import (
 
 // CreateUpload creates a new upload and assigns it an ID.
 func (s *Service) CreateUpload(_ context.Context, req *tv1.CreateUploadRequest) (*tv1.CreateUploadResponse, error) {
-	upload, err := s.UploadManager.CreateUpload(req.Size, []byte{0})
+	upload, err := s.UploadManager.CreateUpload(req.Size, req.FileSha256, []byte{0})
 	if err != nil {
 		slog.Error("error creating upload", "err", err)
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("error creating upload: %v", err))
@@ -65,7 +66,19 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 				s.config.UploadFinishedHook(up.Filename(), up.Size, up.Offset(), up.Metadata)
 			}
 
+			// finish the upload and verify checksum if present
 			err := s.UploadManager.Finish(up.ID)
+
+			// if the checksum didn't match we remove the file and return an error
+			if errors.Is(ErrChecksumForFileMismatch, err) {
+				err2 := s.fileStore.Remove(up.ID)
+				if err2 != nil {
+					slog.Info("failed to remove upload after failed checksum", "id", up.ID, "filename", up.Filename(), "err", err)
+				}
+
+				return status.Error(codes.FailedPrecondition, err.Error())
+			}
+
 			if err != nil {
 				// not much we can do about this except report it
 				slog.Error("error finishing upload", "err", err)
@@ -79,13 +92,13 @@ func (s *Service) Upload(stream tv1.TransferService_UploadServer) error {
 			return status.Error(codes.Unknown, err.Error())
 		}
 
-		id, err := ParseID(req.Id)
-		if err != nil {
-			return err
-		}
-
 		// if this is the first message we have to get the upload instance
 		if up == nil {
+			id, err := ParseID(req.Id)
+			if err != nil {
+				return err
+			}
+
 			up = s.UploadManager.GetUpload(id)
 			if up == nil {
 				return status.Error(codes.NotFound, "upload id not found")

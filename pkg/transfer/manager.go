@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -20,8 +21,13 @@ func newManager(fileStore *FileStore) (*uploadManager, error) {
 	}, nil
 }
 
+// errors
+var (
+	ErrChecksumForFileMismatch = errors.New("checksum mismatch for whole file")
+)
+
 // CreateUpload creates a new upload
-func (m *uploadManager) CreateUpload(size int64, meta []byte) (*upload, error) {
+func (m *uploadManager) CreateUpload(size int64, fileSHA256 []byte, meta []byte) (*upload, error) {
 	id, err := NewID()
 	if err != nil {
 		return nil, err
@@ -38,10 +44,11 @@ func (m *uploadManager) CreateUpload(size int64, meta []byte) (*upload, error) {
 	}
 
 	upload := &upload{
-		ID:       id,
-		Size:     size,
-		file:     uploadFile,
-		Metadata: meta,
+		ID:         id,
+		Size:       size,
+		file:       uploadFile,
+		Metadata:   meta,
+		FileSHA256: fileSHA256,
 	}
 
 	m.uploads[id] = upload
@@ -64,9 +71,11 @@ func (m *uploadManager) GetUploads() []*upload {
 	return uploads
 }
 
-// Finish upload and close file
+// Finish upload and close file.  If the FileSHA256 is set in the checksum we
+// check that this is correct.
 func (m *uploadManager) Finish(id ID) error {
 	slog.Debug("finishing", "id", id)
+
 	upload, ok := m.uploads[id]
 	if !ok {
 		return fmt.Errorf("upload [%s] does not exist", id)
@@ -77,6 +86,18 @@ func (m *uploadManager) Finish(id ID) error {
 	err := upload.file.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close upload file [%s]: %w", upload.Filename(), err)
+	}
+
+	// If a checksum is present, verify it
+	if len(upload.FileSHA256) > 0 {
+		sum, err := checksumFile(upload.Filename())
+		if err != nil {
+			return fmt.Errorf("checksum failed: %w", err)
+		}
+
+		if !bytes.Equal(sum, upload.FileSHA256) {
+			return ErrChecksumForFileMismatch
+		}
 	}
 
 	return nil

@@ -6,8 +6,9 @@ package transfer.v1;
 // specified size. The metadata is an opaque byte blob into which the client
 // can serialize any application specific metadata.
 message CreateUploadRequest {
-	int64 size 		= 2;
-	bytes metadata	= 1;
+	int64 size 			= 1;
+	bytes file_sha256	= 2;
+	bytes metadata		= 3;
 }
 
 // CreateUploadResponse returns the ID of the upload and the block size

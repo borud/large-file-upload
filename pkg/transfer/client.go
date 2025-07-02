@@ -181,6 +181,12 @@ func (c *Client) createOrResumeUpload(filename string, meta []byte) (uploadState
 		return uploadState{}, fmt.Errorf("file error for [%s]: %w", filename, err)
 	}
 
+	// compute checksum early
+	checksum, err := checksumFile(filename)
+	if err != nil {
+		return uploadState{}, fmt.Errorf("failed to checksum file: %w", err)
+	}
+
 	stateFilename := c.stateFilename(filename)
 
 	_, err = os.Stat(stateFilename)
@@ -218,10 +224,11 @@ func (c *Client) createOrResumeUpload(filename string, meta []byte) (uploadState
 
 	// if we are here there was no existing file upload so we need to create
 	// a new upload.
-	slog.Info("new upload")
+
 	resp, err := c.client.CreateUpload(context.Background(), &tv1.CreateUploadRequest{
-		Size:     info.Size(),
-		Metadata: meta,
+		Size:       info.Size(),
+		Metadata:   meta,
+		FileSha256: checksum,
 	})
 	if err != nil {
 		return uploadState{}, fmt.Errorf("unable to create new upload: %w", err)
@@ -243,8 +250,6 @@ func (c *Client) createOrResumeUpload(filename string, meta []byte) (uploadState
 }
 
 func (c *Client) saveState(state uploadState, filename string) error {
-	slog.Info("saving state", "stateFilename", c.stateFilename(filename), "id", state.ID)
-
 	data, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to serialize state to JSON: %w", err)
